@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Transactions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+
+	<div th:if="${listTransactions != null}">
+		<h1>Transactions</h1>
+		<ul>
+			<li th:each="transaction : ${listTransactions}" th:utext="${transaction.amount}+' EUR'"></li>
+		</ul>
+		<p><a href="/">Back</a></p>
+	</div>
+</body>
+</html>
