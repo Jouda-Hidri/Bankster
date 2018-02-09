@@ -1,7 +1,6 @@
 package bankster.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -43,33 +42,6 @@ public class ClientApplication {
 		SpringApplication.run(ClientApplication.class, args);
 	}
 
-	/**
-	 * This method inserts a list of transactions as test data
-	 * 
-	 * @return the list of transactions as Bean
-	 */
-	@Bean
-	InitializingBean sendDatabase() {
-		return () -> {
-			transactionRepository.save(new Transaction(-2.95, Category.FOOD));
-			transactionRepository.save(new Transaction(-63.42, Category.UTILITIES));
-			transactionRepository.save(new Transaction(-10.00, Category.HOBBIES));
-			transactionRepository.save(new Transaction(-19.90, Category.HOBBIES));
-			transactionRepository.save(new Transaction(-6.06, Category.FOOD));
-			transactionRepository.save(new Transaction(-9.99, Category.HOBBIES));
-			transactionRepository.save(new Transaction(-200.00, Category.CASH));
-			transactionRepository.save(new Transaction(-5.89, Category.FOOD));
-			transactionRepository.save(new Transaction(-4.50, Category.SHOPPING));
-			transactionRepository.save(new Transaction(-1.75, Category.FOOD));
-			transactionRepository.save(new Transaction(-1.75, Category.FOOD));
-			transactionRepository.save(new Transaction(-650.00, Category.UTILITIES));
-			transactionRepository.save(new Transaction(-18.88, Category.FOOD));
-			transactionRepository.save(new Transaction(-50.00, Category.CASH));
-			transactionRepository.save(new Transaction(-3.95, Category.OTHER));
-			transactionRepository.save(new Transaction(-5.89, Category.FOOD));
-		};
-	}
-
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		return builder.build();
@@ -101,7 +73,10 @@ public class ClientApplication {
 					Map<String, Object> transactionsValue = (Map<String, Object>) transactionsDetails.get("value");
 					String transactionsAmount = (String) transactionsValue.get("amount");
 					log.info("transaction_id : " + id + "; amount : " + transactionsAmount);
-					//TODO persist Entity transaction in Database
+					Transaction save = transactionRepository
+							.save(new Transaction(Double.parseDouble(transactionsAmount), Category.OTHER));
+					log.info("Transaction : " + save.getAmount() + " EUR is saved successfully");
+
 				}
 
 			} catch (JsonGenerationException e) {
