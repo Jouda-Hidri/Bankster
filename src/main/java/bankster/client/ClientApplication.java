@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import bankster.client.domain.Category;
 import bankster.client.domain.Transaction;
 import bankster.client.domain.TransactionRepository;
+import bankster.client.domain.User;
+import bankster.client.domain.UserRepository;
 
 /**
  * @author joudahidri
@@ -38,14 +40,32 @@ public class ClientApplication {
 	@Autowired
 	TransactionRepository transactionRepository;
 
+	@Autowired
+	UserRepository userRepository;
+
 	public static void main(String[] args) {
 		SpringApplication.run(ClientApplication.class, args);
+	}
+
+	/**
+	 * This method inserts a test user
+	 */
+	@Bean
+	InitializingBean sendDatabase() {
+		return () -> {
+			userRepository.save(new User("user", "password"));
+		};
 	}
 
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		return builder.build();
 	}
+
+	/**
+	 * This command runner extracts transaction data from the Rest API and saves
+	 * them in the repository
+	 */
 
 	@Bean
 	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
@@ -55,7 +75,7 @@ public class ClientApplication {
 					// .accept(MediaType.APPLICATION_JSON) FIXME
 					.get(String.class);
 			log.info("json : " + json);
-			
+
 			try {
 				ObjectMapper mapper = new ObjectMapper();
 				Map<String, List<Map<String, Object>>> map = mapper.readValue(json,
