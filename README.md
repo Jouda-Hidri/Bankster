@@ -1,4 +1,4 @@
-# Bankster
+# Bankster [![Build Status](https://travis-ci.org/Jouda-Hidri/Bankster.svg?branch=master)](https://travis-ci.org/Jouda-Hidri/Bankster)
 
 Bankster is a java application that helps manage expenses by tracking bank transactions.
 
