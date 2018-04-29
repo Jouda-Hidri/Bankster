@@ -33,7 +33,7 @@ import bankster.client.domain.UserRepository;
  *
  */
 @SpringBootApplication
-public class ClientApplication {
+public class ClientApplication extends org.springframework.boot.web.support.SpringBootServletInitializer{
 
 	private static final Logger log = LoggerFactory.getLogger(ClientApplication.class);
 

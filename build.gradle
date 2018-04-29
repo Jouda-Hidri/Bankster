@@ -18,6 +18,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'war'
 
 group = 'bankster'
 version = '0.0.1-SNAPSHOT'
@@ -25,8 +26,10 @@ sourceCompatibility = 1.8
 
 repositories {
 	mavenCentral()
+	maven {
+		url 'http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release'
+    }
 }
-
 
 dependencies {
 	compile("org.springframework.boot:spring-boot-starter-jersey")
@@ -34,6 +37,9 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-web')
 	compile('org.springframework.boot:spring-boot-starter-thymeleaf')
 	compile("org.springframework.boot:spring-boot-starter-security")
+	compile ("com.amazonaws:aws-java-sdk-dynamodb:1.10.52")
+	compile("com.github.derjust:spring-data-dynamodb:4.2.0")
+	providedRuntime ('org.springframework.boot:spring-boot-starter-tomcat')
 	runtime('org.springframework.boot:spring-boot-devtools')
 	runtime('com.h2database:h2')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
