@@ -43,9 +43,4 @@ dependencies {
 	runtime('org.springframework.boot:spring-boot-devtools')
 	runtime('com.h2database:h2')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
-<<<<<<< HEAD
 }
-
-=======
-}
->>>>>>> e14eef97fa2e479c0360970d1918951ef8b903a0
