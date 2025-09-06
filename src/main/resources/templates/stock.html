@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Stock Data</title>
+</head>
+<body>
+<h1>Recent OHLCV Data</h1>
+
+<table border="1">
+    <tr>
+        <th>Timestamp</th>
+        <th>Open</th>
+        <th>Close</th>
+        <th>Prediction</th>
+        <th>Prediction Enhanced</th>
+        <th>RSI</th>
+        <th>Volatility</th>
+    </tr>
+    <tr th:each="c : ${candles}">
+        <td th:text="${c.dateTime}"></td>
+        <td th:text="${c.open}"></td>
+        <td th:text="${c.close}"></td>
+        <td th:text="${c.prediction}"></td>
+        <td th:text="${c.predictionEnhanced}"></td>
+
+        <!-- RSI with NaN check -->
+        <td th:text="${c.rsi != null && c.rsi == c.rsi ? c.rsi : 'N/A'}"
+            th:style="${c.rsi != null && c.rsi == c.rsi} ?
+                  (${c.rsi > 70 ? 'color:red' : (c.rsi < 30 ? 'color:green' : 'color:black')}) :
+                  'color:gray'">
+        </td>
+
+        <!-- Volatility with NaN check -->
+        <td th:text="${c.volatility != null && c.volatility == c.volatility ? c.volatility : 'N/A'}"
+            th:style="${c.volatility != null && c.volatility == c.volatility} ?
+                  (${c.volatility > 0.02 ? 'color:orange' : 'color:black'}) :
+                  'color:gray'">
+        </td>
+    </tr>
+
+</table>
+
+
+
+
+
+<p>
+    <a href="/">Back</a>
+</p>
+
+</body>
+</html>
