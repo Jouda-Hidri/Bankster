@@ -47,6 +47,14 @@ public class TransactionController {
         List<Candle> candles = client.fetchOHLCV("AAPL", "1d", "6mo");
         model.addAttribute("candles", candles);
         service.predict(candles);
+        long correctCount = candles.stream()
+                .filter(Candle::getRandomForest)
+                .count();
+        long total = candles.stream()
+                .filter(c -> c.getRandomForestPrediction() != null)
+                .count();
+        double accuracy = 100.0 * correctCount / total;
+        model.addAttribute("accuracy", accuracy);
 //        double rsi = service.computeRSI(candles, 50);
 //        double volatility = service.computeVolatility(candles, 50);
 //        model.addAttribute("rsi", rsi);

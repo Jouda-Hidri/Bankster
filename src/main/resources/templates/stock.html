@@ -11,6 +11,7 @@
         <th>Timestamp</th>
         <th>Open</th>
         <th>Close</th>
+        <th>Random Forest</th>
         <th>Prediction</th>
         <th>Prediction Enhanced</th>
         <th>RSI</th>
@@ -20,6 +21,7 @@
         <td th:text="${c.dateTime}"></td>
         <td th:text="${c.open}"></td>
         <td th:text="${c.close}"></td>
+        <td th:text="${c.randomForestPrediction}" th:style="${c.randomForest ? 'color:green' : 'color:red'}"></td>
         <td th:text="${c.prediction}"></td>
         <td th:text="${c.predictionEnhanced}"></td>
 
@@ -37,13 +39,8 @@
                   'color:gray'">
         </td>
     </tr>
-
 </table>
-
-
-
-
-
+<p th:text="${accuracy}"></p>
 <p>
     <a href="/">Back</a>
 </p>

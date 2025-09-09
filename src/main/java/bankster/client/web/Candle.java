@@ -9,6 +9,8 @@ public class Candle {
     private Double close;
     private Double prediction;
     private Double predictionEnhanced;
+    private Integer randomForestPrediction;
+    private boolean randomForest; // prediction is correct
     private Double rsi;
     private Double volatility;
 
@@ -58,6 +60,22 @@ public class Candle {
 
     public void setVolatility(Double volatility) {
         this.volatility = volatility;
+    }
+
+    public Integer getRandomForestPrediction() {
+        return randomForestPrediction;
+    }
+
+    public void setRandomForestPrediction(Integer randomForestPrediction) {
+        this.randomForestPrediction = randomForestPrediction;
+    }
+
+    public Boolean getRandomForest() {
+        return randomForest;
+    }
+
+    public void setRandomForest(Boolean randomForest) {
+        this.randomForest = randomForest;
     }
 }
 
