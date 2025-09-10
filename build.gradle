@@ -15,32 +15,35 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+
 }
 
 dependencies {
-//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // Smile ML
+    implementation 'com.github.haifengl:smile-core:2.6.0'
+    implementation 'com.github.haifengl:smile-data:2.6.0'
+    implementation 'com.github.haifengl:smile-math:2.6.0'
+
+    // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-//    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // DL4J / ND4J
+    implementation 'org.deeplearning4j:deeplearning4j-core:1.0.0-M2.1'
+//    implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
+
+    // Other deps
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    implementation 'org.bytedeco:openblas-platform:0.3.23-1.5.9'
-
-    compileOnly 'org.projectlombok:lombok:1.18.30'
-    annotationProcessor 'org.projectlombok:lombok:1.18.30'
-
-    implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.10.52'
-    implementation 'com.github.derjust:spring-data-dynamodb:4.2.0'
     implementation 'org.json:json:20240303'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.99.Final:osx-aarch_64' // for Apple Silicon
 
-    implementation 'com.github.haifengl:smile-core:2.6.0'
-    implementation 'com.github.haifengl:smile-data:2.6.0'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-    runtimeOnly 'org.springframework.boot:spring-boot-starter-tomcat'
-//    runtimeOnly 'org.springframework.boot-devtools'
-//    runtimeOnly 'com.h2database:h2'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation("org.nd4j:nd4j-native:1.0.0-M2.1")
+    // For M1 apple processor
+    implementation("org.nd4j:nd4j-native:1.0.0-M2.1:macosx-arm64")
+    implementation("org.bytedeco:openblas:0.3.21-1.5.8:macosx-arm64")
 }

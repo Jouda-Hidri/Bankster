@@ -2,15 +2,29 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Stock Data</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .rf-up { color: green; font-weight: bold; }
+        .rf-down { color: red; font-weight: bold; }
+        .rsi-high { color: red; }
+        .rsi-low { color: green; }
+        .rsi-normal { color: black; }
+        .vol-high { color: orange; }
+        .vol-normal { color: black; }
+        .na { color: gray; }
+    </style>
 </head>
 <body>
 <h1>Recent OHLCV Data</h1>
 
-<table border="1">
+<table>
     <tr>
         <th>Timestamp</th>
         <th>Open</th>
         <th>Close</th>
+        <th>LSTM</th>
         <th>Random Forest</th>
         <th>Prediction</th>
         <th>Prediction Enhanced</th>
@@ -19,31 +33,30 @@
     </tr>
     <tr th:each="c : ${candles}">
         <td th:text="${c.dateTime}"></td>
-        <td th:text="${c.open}"></td>
-        <td th:text="${c.close}"></td>
-        <td th:text="${c.randomForestPrediction}" th:style="${c.randomForest ? 'color:green' : 'color:red'}"></td>
-        <td th:text="${c.prediction}"></td>
-        <td th:text="${c.predictionEnhanced}"></td>
+        <td th:text="${#numbers.formatDecimal(c.open, 1, 2)}"></td>
+        <td th:text="${#numbers.formatDecimal(c.close, 1, 2)}"></td>
+        <td th:text="${#numbers.formatDecimal(c.lstmForecast, 1, 4)}"></td>
 
-        <!-- RSI with NaN check -->
-        <td th:text="${c.rsi != null && c.rsi == c.rsi ? c.rsi : 'N/A'}"
-            th:style="${c.rsi != null && c.rsi == c.rsi} ?
-                  (${c.rsi > 70 ? 'color:red' : (c.rsi < 30 ? 'color:green' : 'color:black')}) :
-                  'color:gray'">
+        <td th:text="${c.randomForestPrediction}"
+            th:classappend="${c.randomForest} ? 'rf-up' : 'rf-down'"></td>
+
+        <td th:text="${#numbers.formatDecimal(c.prediction, 1, 2)}"></td>
+        <td th:text="${#numbers.formatDecimal(c.predictionEnhanced, 1, 2)}"></td>
+
+        <td th:text="${c.rsi != null && c.rsi == c.rsi ? #numbers.formatDecimal(c.rsi, 1, 2) : 'N/A'}"
+            th:classappend="${c.rsi != null && c.rsi == c.rsi} ?
+                            (${c.rsi > 70} ? 'rsi-high' : (${c.rsi < 30} ? 'rsi-low' : 'rsi-normal'))
+                            : 'na'">
         </td>
 
-        <!-- Volatility with NaN check -->
-        <td th:text="${c.volatility != null && c.volatility == c.volatility ? c.volatility : 'N/A'}"
-            th:style="${c.volatility != null && c.volatility == c.volatility} ?
-                  (${c.volatility > 0.02 ? 'color:orange' : 'color:black'}) :
-                  'color:gray'">
+        <td th:text="${c.volatility != null && c.volatility == c.volatility ? #numbers.formatDecimal(c.volatility, 1, 4) : 'N/A'}"
+            th:classappend="${c.volatility != null && c.volatility == c.volatility} ?
+                            (${c.volatility > 0.02} ? 'vol-high' : 'vol-normal')
+                            : 'na'">
         </td>
     </tr>
 </table>
-<p th:text="${accuracy}"></p>
-<p>
-    <a href="/">Back</a>
-</p>
 
+<p><a href="/">Back</a></p>
 </body>
 </html>

@@ -1,5 +1,7 @@
 package bankster.client.web;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -11,6 +13,7 @@ public class Candle {
     private Double predictionEnhanced;
     private Integer randomForestPrediction;
     private boolean randomForest; // prediction is correct
+    @Getter private Double lstmForecast;
     private Double rsi;
     private Double volatility;
 
@@ -76,6 +79,10 @@ public class Candle {
 
     public void setRandomForest(Boolean randomForest) {
         this.randomForest = randomForest;
+    }
+
+    public void setLstmForecast(Double lstmForecast) {
+        this.lstmForecast = lstmForecast;
     }
 }
 
