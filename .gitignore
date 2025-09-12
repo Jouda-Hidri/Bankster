@@ -2,6 +2,10 @@
 /build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Ignore virtual environment folder
+venv/
+.venv/
+
 ### STS ###
 .apt_generated
 .classpath

@@ -1,47 +1,31 @@
 package bankster.client;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.client.ClientBuilder;
+import bankster.client.web.YahooFinanceWebClient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import bankster.client.domain.Category;
-import bankster.client.domain.Transaction;
-import bankster.client.domain.TransactionRepository;
-import bankster.client.domain.User;
-import bankster.client.domain.UserRepository;
-
 /**
  * @author joudahidri
  *
  */
-@SpringBootApplication
-public class ClientApplication extends org.springframework.boot.web.support.SpringBootServletInitializer{
+@SpringBootApplication(exclude = {
+        org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration.class
+})
+public class ClientApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(ClientApplication.class);
-
-	@Autowired
-	TransactionRepository transactionRepository;
-
-	@Autowired
-	UserRepository userRepository;
+//
+//	@Autowired
+//	TransactionRepository transactionRepository;
+//
+//	@Autowired
+//	UserRepository userRepository;
 
 	public static void main(String[] args) {
 		SpringApplication.run(ClientApplication.class, args);
@@ -50,12 +34,12 @@ public class ClientApplication extends org.springframework.boot.web.support.Spri
 	/**
 	 * This method inserts a test user
 	 */
-	@Bean
-	InitializingBean sendDatabase() {
-		return () -> {
-			userRepository.save(new User("user", "password"));
-		};
-	}
+//	@Bean
+//	InitializingBean sendDatabase() {
+//		return () -> {
+//			userRepository.save(new User("user", "password"));
+//		};
+//	}
 
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
@@ -67,6 +51,7 @@ public class ClientApplication extends org.springframework.boot.web.support.Spri
 	 * them in the repository
 	 */
 
+    /*
 	@Bean
 	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
 		return args -> {
@@ -107,5 +92,5 @@ public class ClientApplication extends org.springframework.boot.web.support.Spri
 				e.printStackTrace();
 			}
 		};
-	}
+	} */
 }

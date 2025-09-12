@@ -1,46 +1,49 @@
-buildscript {
-	ext {
-		springBootVersion = '1.5.10.RELEASE'
-	}
-	repositories {
-		mavenCentral()
-	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-	}
-}
-
 plugins {
-    id 'io.franzbecker.gradle-lombok' version '1.8'
     id 'java'
+    id 'org.springframework.boot' version '2.7.16'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'io.freefair.lombok' version '8.0.1'
 }
-
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'war'
 
 group = 'bankster'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 1.8
+
+java {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
 
 repositories {
-	mavenCentral()
-	maven {
-		url 'http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release'
-    }
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+
 }
 
 dependencies {
-	compile("org.springframework.boot:spring-boot-starter-jersey")
-	compile('org.springframework.boot:spring-boot-starter-data-jpa')
-	compile('org.springframework.boot:spring-boot-starter-web')
-	compile('org.springframework.boot:spring-boot-starter-thymeleaf')
-	compile("org.springframework.boot:spring-boot-starter-security")
-	compile ("com.amazonaws:aws-java-sdk-dynamodb:1.10.52")
-	compile("com.github.derjust:spring-data-dynamodb:4.2.0")
-	providedRuntime ('org.springframework.boot:spring-boot-starter-tomcat')
-	runtime('org.springframework.boot:spring-boot-devtools')
-	runtime('com.h2database:h2')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
+    // Smile ML
+    implementation 'com.github.haifengl:smile-core:2.6.0'
+    implementation 'com.github.haifengl:smile-data:2.6.0'
+    implementation 'com.github.haifengl:smile-math:2.6.0'
+
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // DL4J / ND4J
+    implementation 'org.deeplearning4j:deeplearning4j-core:1.0.0-M2.1'
+//    implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2.1'
+
+    // Other deps
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation 'org.json:json:20240303'
+    implementation 'io.netty:netty-resolver-dns-native-macos:4.1.99.Final:osx-aarch_64' // for Apple Silicon
+
+
+    implementation("org.nd4j:nd4j-native:1.0.0-M2.1")
+    // For M1 apple processor
+    implementation("org.nd4j:nd4j-native:1.0.0-M2.1:macosx-arm64")
+    implementation("org.bytedeco:openblas:0.3.21-1.5.8:macosx-arm64")
 }

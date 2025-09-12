@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Stock Data</title>
+</head>
+<body>
+<h1>Recent OHLCV Data</h1>
+
+<table border="1">
+    <tr>
+        <th>Timestamp</th>
+        <th>Open</th>
+        <th>Close</th>
+        <th>LSTM</th>
+    </tr>
+    <tr th:each="c : ${candles}">
+        <td th:text="${c.date}"></td>
+        <td th:text="${c.open}"></td>
+        <td th:text="${c.close}"></td>
+        <td th:text="${c.lstmForecast}" th:style="${c.lstm ? 'color:green' : 'color:red'}"></td>
+    </tr>
+</table>
+<p th:text="${accuracy}"></p>
+<p th:text="${pnl}"></p>
+
+<p><a href="/">Back</a></p>
+</body>
+</html>
