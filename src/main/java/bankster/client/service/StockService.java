@@ -9,9 +9,12 @@ import smile.data.vector.IntVector;
 import smile.math.matrix.Matrix;
 import smile.projection.PCA;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
@@ -35,7 +38,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class StockService {
 
-    public void lstmForecast(List<Candle> candles, int lookback) {
+    public void lstmForecast(List<Candle> candles, int lookback, Map<LocalDate, Double> sentiments) {
         int batchSize = 32;
 
         // --- 1. Compute returns ---
@@ -49,11 +52,12 @@ public class StockService {
         // --- 2. Build sliding windows ---
         List<DataSet> sequences = new ArrayList<>();
         for (int i = 0; i < returns.size() - lookback; i++) {
-            INDArray input = Nd4j.create(1, 1, lookback);
+            INDArray input = Nd4j.create(1, 2, lookback);
             INDArray label = Nd4j.create(1, 1, lookback); // same sequence length as input
 
             for (int j = 0; j < lookback; j++) {
                 input.putScalar(new int[]{0, 0, j}, returns.get(i + j));
+                input.putScalar(new int[]{0, 1, j}, sentiments.getOrDefault(candles.get(i + j).getDate(), 0.0));  // <- from FinBERT
                 label.putScalar(new int[]{0, 0, j}, returns.get(i + j + 1)); // next step
             }
 
@@ -74,7 +78,7 @@ public class StockService {
                 .updater(new Adam(0.001))
                 .list()
                 .layer(new LSTM.Builder()
-                        .nIn(1)
+                        .nIn(2)
                         .nOut(50)
                         .activation(Activation.TANH)
                         .build())
@@ -105,14 +109,14 @@ public class StockService {
             for (int row = 0; row < predicted.size(0); row++) {
                 for (int t = 0; t < predicted.size(2); t++) { // iterate over sequence
                     double forecast = predicted.getDouble(row, 0, t);
-                    Candle targetCandle = candles.get(candleIndex - ((int) predicted.size(2)) + t + 1);
+                    int index = candleIndex - ((int) predicted.size(2)) + t + 1;
+                    Candle targetCandle = candles.get(index);
                     targetCandle.setLstmForecast(forecast);
-
-//                    System.out.printf("Candle[%d] ts=%d forecast=%.6f actual=%.6f%n",
-//                            candleIndex - predicted.size(2) + t + 1,
-//                            targetCandle.getDateTime(),
-//                            forecast,
-//                            ds.getLabels().getDouble(row, 0, t));
+                    targetCandle.setLstm(candles.get(index + 1));
+                    System.out.printf(
+                            "ts=%d forecast=%.6f%n",
+                            targetCandle.getDate().toEpochDay(),
+                            targetCandle.getLstmForecast());
                 }
                 candleIndex++;
             }

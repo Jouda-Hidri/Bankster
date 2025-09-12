@@ -1,13 +1,13 @@
 package bankster.client.web;
 
-import io.netty.channel.ChannelOption;
-import reactor.netty.http.client.HttpClient;
-
-import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.json.JSONObject;
@@ -22,15 +22,57 @@ public class YahooFinanceWebClient {
                 .build();
     }
 
-    public  List<List<Candle>> fetch(List<String> symbols, String interval, String range) {
+    public Map<LocalDate, List<String>> fetchNewsByDate(String symbol) {
+        JSONArray newsItems = fetchNews(symbol);
+        Map<LocalDate, List<String>> newsByDate = new HashMap<>();
+
+        for (int i = 0; i < newsItems.length(); i++) {
+            JSONObject item = newsItems.getJSONObject(i);
+            String headline = item.getString("title");
+            long ts = item.getLong("providerPublishTime");
+
+            LocalDate date = toDate(ts);
+            newsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(headline);
+        }
+
+        return newsByDate;
+    }
+
+    public  List<List<Candle>> fetchChart(List<String> symbols, String interval, String range) {
         List<List<Candle>> matrice = new ArrayList<>();
         for(String symbol : symbols) {
-            matrice.add(fetch(symbol, interval, range));
+            matrice.add(fetchChart(symbol, interval, range));
         }
         return matrice;
     }
 
-    private List<Candle> fetch(String symbol, String interval, String range) {
+    // Fetch raw news JSON for a given stock symbol
+    public JSONArray fetchNews(String symbol) {
+        String url = "/v2/finance/news?symbols=" + symbol;
+
+        String response = webClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        JSONObject json = new JSONObject(response);
+        JSONArray items = json.getJSONObject("finance").getJSONArray("result")
+                .getJSONObject(0)
+                .getJSONArray("items");
+
+        return items;
+    }
+    // Convert timestamp to LocalDate
+
+    private LocalDate toDate(long epochSeconds) {
+        return Instant.ofEpochSecond(epochSeconds)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+    }
+    // Map news by date
+
+    private List<Candle> fetchChart(String symbol, String interval, String range) {
         List<Candle> candles = new ArrayList<>();
         try {
             String response = webClient.get()
