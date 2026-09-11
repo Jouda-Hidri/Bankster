@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Transactions</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1>Transactions</h1>
+<p>
+    Account <span th:text="${iban}"></span>,
+    last <span th:text="${days}"></span> days.
+</p>
+
+<h2>Booked</h2>
+<table border="1">
+    <tr>
+        <th>Booking date</th>
+        <th>Amount</th>
+        <th>Currency</th>
+        <th>Counterparty</th>
+        <th>Description</th>
+    </tr>
+    <tr th:each="t : ${booked}">
+        <td th:text="${t.bookingDate}"></td>
+        <td th:text="${t.transactionAmount.amount}"></td>
+        <td th:text="${t.transactionAmount.currency}"></td>
+        <td th:text="${t.counterparty()}"></td>
+        <td th:text="${t.description()}"></td>
+    </tr>
+</table>
+<p th:if="${booked.isEmpty()}">No booked transactions in this period.</p>
+
+<h2>Pending</h2>
+<table border="1">
+    <tr>
+        <th>Reservation date</th>
+        <th>Amount</th>
+        <th>Currency</th>
+        <th>Description</th>
+    </tr>
+    <tr th:each="t : ${pending}">
+        <td th:text="${t.reservationDate}"></td>
+        <td th:text="${t.transactionAmount.amount}"></td>
+        <td th:text="${t.transactionAmount.currency}"></td>
+        <td th:text="${t.remittanceInformationUnstructured}"></td>
+    </tr>
+</table>
+<p th:if="${pending.isEmpty()}">No pending transactions.</p>
+
+<p><a href="/psd2/accounts">Back</a></p>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Bank connection</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1>Bank connection (NextGenPSD2 / Berlin Group XS2A)</h1>
+
+<table border="1">
+    <tr>
+        <th>ASPSP</th>
+        <td th:text="${baseUrl}"></td>
+    </tr>
+    <tr>
+        <th>TPP id (client_id)</th>
+        <td th:text="${clientId}"></td>
+    </tr>
+    <tr>
+        <th>PSU authenticated</th>
+        <td th:text="${authenticated} ? 'yes' : 'no'"></td>
+    </tr>
+    <tr>
+        <th>Consent</th>
+        <td th:text="${consentId} ?: '-'"></td>
+    </tr>
+    <tr>
+        <th>Consent status</th>
+        <td th:text="${consentStatus} ?: '-'"></td>
+    </tr>
+</table>
+
+<p th:if="${!authenticated}">
+    <a href="/psd2/connect">Connect to the bank</a>
+</p>
+
+<div th:if="${authenticated}">
+    <p th:if="${consentValid}"><a href="/psd2/accounts">View accounts</a></p>
+    <p th:unless="${consentValid}">
+        The consent still needs to be signed by the PSU.
+        <a href="/psd2/connect">Start again</a>
+    </p>
+    <p><a href="/psd2/disconnect">Disconnect</a></p>
+</div>
+
+<p><a href="/">Back</a></p>
+</body>
+</html>

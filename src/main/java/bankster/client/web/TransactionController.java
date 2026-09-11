@@ -7,7 +7,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,7 +37,6 @@ public class TransactionController {
                 "AAPL",
                 candles.get(0).getDate(),
                 candles.get(candles.size() - 1).getDate());
-//        Map<LocalDate, List<String>> news = yahooClient.fetchNewsByDate("AAPL");
         FinbertWebClient finbertClient = new FinbertWebClient();
         Map<LocalDate, Double> sentiment = finbertClient.getDailySentiment(news);
         service.lstmForecast(candles, 50, sentiment);

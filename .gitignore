@@ -6,6 +6,14 @@
 venv/
 .venv/
 
+# PSD2 transport certificate and private key — never commit these
+psd2-sandbox/
+tpp.key
+tpp.crt
+tpp-keystore.p12
+ca-chain.crt
+ca-response.html
+
 ### STS ###
 .apt_generated
 .classpath

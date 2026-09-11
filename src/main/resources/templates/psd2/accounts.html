@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Accounts</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+<body>
+<h1>Accounts</h1>
+
+<table border="1">
+    <tr>
+        <th>Name</th>
+        <th>IBAN</th>
+        <th>Owner</th>
+        <th>Product</th>
+        <th>Balances</th>
+        <th></th>
+    </tr>
+    <tr th:each="a : ${accounts}">
+        <td th:text="${a.displayName()}"></td>
+        <td th:text="${a.iban}"></td>
+        <td th:text="${a.ownerName}"></td>
+        <td th:text="${a.product}"></td>
+        <td>
+            <span th:each="b : ${balances[a.resourceId]}">
+                <span th:text="${b.balanceType}"></span>:
+                <span th:text="${b.balanceAmount.amount}"></span>
+                <span th:text="${b.balanceAmount.currency}"></span><br/>
+            </span>
+        </td>
+        <td>
+            <a th:href="@{'/psd2/accounts/' + ${a.resourceId} + '/transactions'}">Transactions</a>
+        </td>
+    </tr>
+</table>
+
+<p th:if="${accounts.isEmpty()}">The consent covers no accounts.</p>
+
+<p><a href="/psd2">Back</a></p>
+</body>
+</html>
