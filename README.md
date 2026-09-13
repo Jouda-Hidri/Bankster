@@ -1,4 +1,4 @@
-# Bankster [![Build Status](https://travis-ci.org/Jouda-Hidri/Bankster.svg?branch=master)](https://travis-ci.org/Jouda-Hidri/Bankster)
+# Bankster [![build](https://github.com/Jouda-Hidri/Bankster/actions/workflows/build.yml/badge.svg)](https://github.com/Jouda-Hidri/Bankster/actions/workflows/build.yml)
 
 Bankster is a Java application covering two halves of the payments world:
 
