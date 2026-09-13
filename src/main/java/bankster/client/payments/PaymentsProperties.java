@@ -36,6 +36,7 @@ public class PaymentsProperties {
     /** Currency the demo operates in. */
     private String demoCurrency = "EUR";
 
+
     public int getAcquirerFraudRateBasisPoints() {
         return acquirerFraudRateBasisPoints;
     }

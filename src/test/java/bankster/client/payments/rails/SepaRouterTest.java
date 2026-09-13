@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import bankster.client.payments.Money;
 import bankster.client.payments.TestClock;
+import bankster.client.payments.core.AuditTrail;
 import bankster.client.payments.rails.SepaRouter.RailRequest;
 import bankster.client.payments.rails.SepaRouter.Urgency;
 
@@ -30,6 +31,7 @@ class SepaRouterTest {
     private static final String NOT_ON_INSTANT = "SE2930000000000540398031";
 
     private TestClock clock;
+    private AspspLimitDirectory aspspLimits;
     private SepaRouter router;
 
     @BeforeEach
@@ -37,7 +39,9 @@ class SepaRouterTest {
         // Tuesday 09:00 UTC, which is 11:00 in Brussels — a TARGET settlement day,
         // before both the SCT and the TARGET2 cut-offs.
         clock = TestClock.at("2026-09-15T09:00:00Z");
-        router = new SepaRouter(clock, new ReachabilityDirectory(), new IbanBicDirectory());
+        aspspLimits = new AspspLimitDirectory();
+        router = new SepaRouter(clock, new ReachabilityDirectory(), new IbanBicDirectory(),
+                aspspLimits);
     }
 
     private RailDecision route(String creditorIban, String amount, Urgency urgency) {

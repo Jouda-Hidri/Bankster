@@ -21,7 +21,7 @@
                 <button type="submit" th:text="${instantAvailable} ? 'Take it down' : 'Bring it up'"></button>
             </form>
         </td></tr>
-    <tr><th>Per-transaction instant limit</th><td class="num" th:text="${instantLimit}"></td></tr>
+    <tr><th>Our per-transaction instant limit</th><td class="num" th:text="${instantLimit}"></td></tr>
     <tr><th>Instructed but unsettled</th>
         <td>
             <span th:text="${#lists.size(unsettled)}"></span> transfer(s) at ACSP
@@ -79,6 +79,33 @@
     </tr>
 </table>
 <p th:if="${#lists.isEmpty(transfers)}" class="muted">No transfers yet.</p>
+
+<h2>Per-institution instant limits</h2>
+<p class="muted">
+    The EPC's scheme-level ceiling is gone, so the maximum on an instant transfer is each
+    institution's own policy. The one that applies is the lower of ours and the
+    beneficiary's — which is why two transfers of the same amount to two different banks
+    can take different rails. Scope is Berlin Group NextGenPSD2 participants.
+</p>
+<table>
+    <caption>
+        Read once at start-up from <span class="mono">berlin-group-aspsp-limits.json</span>.
+        Changing a limit means editing that file and restarting, so routing behaviour
+        cannot move without a commit to review.
+    </caption>
+    <tr><th>BIC</th><th>Institution</th><th>Country</th>
+        <th class="num">Instant receiving limit</th></tr>
+    <tr th:each="l : ${aspspLimits}">
+        <td class="mono" th:text="${l.bic().institutionBic()}"></td>
+        <td th:text="${l.institutionName()}"></td>
+        <td th:text="${l.country()}"></td>
+        <td class="num" th:text="${l.describeMaximum()}"
+            th:classappend="${l.isUndeclared()} ? 'muted' : ''"></td>
+    </tr>
+</table>
+<p class="muted" th:if="${#lists.isEmpty(aspspLimits)}">
+    No per-institution limits on record; every transfer is bounded by our own limit alone.
+</p>
 
 <h2>Rail characteristics</h2>
 <table>

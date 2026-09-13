@@ -69,6 +69,7 @@ public class SepaRouter {
     private final Clock clock;
     private final ReachabilityDirectory reachability;
     private final IbanBicDirectory bicDirectory;
+    private final AspspLimitDirectory aspspLimits;
 
     /** This institution's own per-transaction ceiling for instant payments. */
     private volatile Money instantTransactionLimit = Money.of("EUR", "100000.00");
@@ -79,10 +80,12 @@ public class SepaRouter {
     /** Set false to simulate the instant scheme being unavailable. */
     private volatile boolean instantRailAvailable = true;
 
-    public SepaRouter(Clock clock, ReachabilityDirectory reachability, IbanBicDirectory bicDirectory) {
+    public SepaRouter(Clock clock, ReachabilityDirectory reachability, IbanBicDirectory bicDirectory,
+                      AspspLimitDirectory aspspLimits) {
         this.clock = clock;
         this.reachability = reachability;
         this.bicDirectory = bicDirectory;
+        this.aspspLimits = aspspLimits;
     }
 
     /** What the payer asked for. */
@@ -128,10 +131,14 @@ public class SepaRouter {
             rejections.add(new Rejection(PaymentRail.SEPA_INST, blocker.get()));
             log.info("Instant transfer of {} downgraded: {}", request.amount(), blocker.get());
 
-            // An instant payment that was too large is still urgent. RTGS settles
-            // it today and has no upper limit, which is exactly the gap it fills.
-            if (!request.amount().isLessThan(instantTransactionLimit)
-                    && canUseTarget2(creditorBic, rejections)) {
+            // An instant payment that was too large is still urgent. RTGS settles it today
+            // and has no upper limit, which is exactly the gap it fills. Measured against
+            // the effective ceiling rather than ours alone: a transfer the beneficiary's
+            // tighter limit turned away is just as urgent as one ours did, and sending it
+            // to the batch rail because our own limit happened to be generous would be an
+            // accident of whose policy bit first.
+            Money ceiling = aspspLimits.effectiveLimit(creditorBic, instantTransactionLimit).amount();
+            if (request.amount().isGreaterThan(ceiling) && canUseTarget2(creditorBic, rejections)) {
                 return decide(PaymentRail.TARGET2, requested, rejections, request);
             }
         }
@@ -161,10 +168,17 @@ public class SepaRouter {
         if (!instantRailAvailable) {
             return Optional.of("the SEPA Instant rail is currently unavailable");
         }
-        if (request.amount().isGreaterThan(instantTransactionLimit)) {
-            return Optional.of("the amount " + request.amount()
-                    + " is above this institution's instant transfer limit of " + instantTransactionLimit);
+
+        // The ceiling is the lower of our sending limit and the beneficiary's receiving
+        // limit. Quoting the wrong one sends the payer to argue with the wrong bank, so
+        // the reason names whichever actually bit.
+        AspspLimitDirectory.EffectiveLimit ceiling =
+                aspspLimits.effectiveLimit(creditorBic, instantTransactionLimit);
+        if (request.amount().isGreaterThan(ceiling.amount())) {
+            return Optional.of("the amount " + request.amount() + " is above "
+                    + ceiling.describeBound() + " of " + ceiling.amount());
         }
+
         if (creditorBic.isEmpty()) {
             return Optional.of("the beneficiary's institution could not be identified from the IBAN, "
                     + "so instant reachability cannot be confirmed");

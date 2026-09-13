@@ -27,6 +27,7 @@ import bankster.client.payments.orchestration.PaymentRepository;
 import bankster.client.payments.orchestration.PaymentRouter;
 import bankster.client.payments.orchestration.RoutingStrategy;
 import bankster.client.payments.rails.SepaPaymentService;
+import bankster.client.payments.rails.AspspLimitDirectory;
 import bankster.client.payments.rails.SepaRouter;
 import bankster.client.payments.recon.ReconciliationService;
 import bankster.client.payments.risk.AmlService;
@@ -61,6 +62,7 @@ public class PaymentsController {
     private final ReconciliationService reconciliation;
     private final SepaPaymentService sepa;
     private final SepaRouter sepaRouter;
+    private final AspspLimitDirectory aspspLimits;
     private final AmlService aml;
     private final FraudEngine fraudEngine;
     private final AuditTrail auditTrail;
@@ -73,7 +75,8 @@ public class PaymentsController {
                               PaymentRepository payments, PaymentRouter router,
                               ChargebackService chargebacks, SettlementService settlements,
                               ReconciliationService reconciliation, SepaPaymentService sepa,
-                              SepaRouter sepaRouter, AmlService aml, FraudEngine fraudEngine,
+                              SepaRouter sepaRouter, AspspLimitDirectory aspspLimits,
+                              AmlService aml, FraudEngine fraudEngine,
                               AuditTrail auditTrail, Outbox outbox,
                               MerchantWebhookDispatcher webhooks,
                               ComplianceEventRecorder complianceLog, DemoScenario demo) {
@@ -87,6 +90,7 @@ public class PaymentsController {
         this.reconciliation = reconciliation;
         this.sepa = sepa;
         this.sepaRouter = sepaRouter;
+        this.aspspLimits = aspspLimits;
         this.aml = aml;
         this.fraudEngine = fraudEngine;
         this.auditTrail = auditTrail;
@@ -184,6 +188,7 @@ public class PaymentsController {
         model.addAttribute("instantLimit", sepaRouter.instantTransactionLimit());
         model.addAttribute("instantAvailable", sepaRouter.isInstantRailAvailable());
         model.addAttribute("unsettled", sepa.unsettled());
+        model.addAttribute("aspspLimits", aspspLimits.all());
         model.addAttribute("demoSummary", demo.lastSummary().orElse(null));
         return "payments/rails";
     }
