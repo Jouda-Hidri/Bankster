@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Banking rails')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Banking rails</h1>
+<p class="muted">
+    Smart routing picks the best rail a transfer can actually travel on. When the requested rail
+    is unavailable the transfer is downgraded deliberately and the reason is recorded — not
+    rejected, and not silently changed.
+</p>
+
+<table>
+    <tr><th>SEPA Instant rail</th>
+        <td>
+            <span th:if="${instantAvailable}" class="ok">available</span>
+            <span th:unless="${instantAvailable}" class="warn">unavailable</span>
+            <form method="post" action="/payments/rails/instant" class="inline">
+                <input type="hidden" name="available" th:value="${!instantAvailable}"/>
+                <button type="submit" th:text="${instantAvailable} ? 'Take it down' : 'Bring it up'"></button>
+            </form>
+        </td></tr>
+    <tr><th>Per-transaction instant limit</th><td class="num" th:text="${instantLimit}"></td></tr>
+    <tr><th>Instructed but unsettled</th>
+        <td>
+            <span th:text="${#lists.size(unsettled)}"></span> transfer(s) at ACSP
+            <form method="post" action="/payments/transfers/settle-due" class="inline">
+                <button type="submit">Settle those whose value date has arrived</button>
+            </form>
+        </td></tr>
+</table>
+
+<h2>Transfers</h2>
+<table>
+    <caption>
+        ACSP means accepted and settling; only ACSC means the beneficiary has the money.
+    </caption>
+    <tr>
+        <th>Transfer</th><th>End-to-end id</th><th>Beneficiary</th>
+        <th class="num">Amount</th><th class="num">Fee</th>
+        <th>Requested rail</th><th>Actual rail</th><th>Why it changed</th>
+        <th>Status</th><th>Value date</th>
+    </tr>
+    <tr th:each="t : ${transfers}">
+        <td class="mono" th:text="${t.transferId()}"></td>
+        <td class="mono" th:text="${t.endToEndId()}"></td>
+        <td>
+            <span th:text="${t.creditor().name()}"></span>
+            <div class="mono muted" th:text="${t.creditor().iban().masked()}"></div>
+        </td>
+        <td class="num" th:text="${t.amount()}"></td>
+        <td class="num" th:text="${t.fee()}"></td>
+        <td th:text="${t.routing() != null} ? ${t.routing().requestedRail().displayName()} : '—'"></td>
+        <td>
+            <span th:if="${t.routing() != null}"
+                  th:text="${t.routing().rail().displayName()}"
+                  th:classappend="${t.routing().downgraded()} ? 'warn' : 'ok'"></span>
+            <span th:if="${t.routing() == null}" class="muted">not routed</span>
+        </td>
+        <td class="muted">
+            <span th:if="${t.routing() != null and t.routing().downgraded()}">
+                <span th:each="r : ${t.routing().rejections()}">
+                    <span th:text="${r.rail()} + ': ' + ${r.reason()}"></span><br/>
+                </span>
+            </span>
+            <span th:if="${t.routing() != null and not t.routing().downgraded()}">—</span>
+        </td>
+        <td>
+            <span th:text="${t.status().isoCode()}"
+                  th:classappend="${t.status().name() == 'SETTLED'} ? 'ok'
+                                 : (${t.status().name() == 'REJECTED'
+                                    or t.status().name() == 'RETURNED'} ? 'bad' : 'warn')"></span>
+            <div class="muted" th:text="${t.status().description()}"></div>
+            <div class="bad" th:if="${t.rejectionCode() != null}"
+                 th:text="${t.rejectionCode()} + ': ' + ${t.rejectionReason()}"></div>
+        </td>
+        <td class="mono" th:text="${t.routing() != null} ? ${t.routing().expectedSettlement()} : ''"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(transfers)}" class="muted">No transfers yet.</p>
+
+<h2>Rail characteristics</h2>
+<table>
+    <tr><th>Rail</th><th>Settles in</th><th>Open at weekends</th><th>Currencies</th><th>Recallable</th></tr>
+    <tr><td>SEPA Credit Transfer</td><td>next business day</td><td>no</td><td>EUR</td><td>yes</td></tr>
+    <tr><td>SEPA Instant</td><td>seconds</td><td>yes</td><td>EUR</td>
+        <td class="warn">no — irrevocable once accepted</td></tr>
+    <tr><td>TARGET2 RTGS</td><td>same day</td><td>no</td><td>EUR</td><td>yes</td></tr>
+    <tr><td>SWIFT correspondent banking</td><td>days</td><td>no</td>
+        <td>EUR, USD, GBP, CHF, JPY, SEK, NOK, DKK</td><td>in practice, with difficulty</td></tr>
+</table>
+<p class="muted">
+    Irrevocability is why Confirmation of Payee runs before an instant transfer is sent.
+    Authorised push payment fraud targets instant rails precisely because the money cannot be
+    pulled back.
+</p>
+
+<h2 th:if="${demoSummary != null and demoSummary.downgradedTransferExplanation().isPresent()}">
+    Downgrade decisions from the demo
+</h2>
+<pre th:if="${demoSummary != null and demoSummary.downgradedTransferExplanation().isPresent()}"
+     th:text="${demoSummary.downgradedTransferExplanation().get()}"></pre>
+
+</body>
+</html>

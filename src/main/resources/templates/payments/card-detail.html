@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Payment detail')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Payment <span class="mono" th:text="${payment.paymentId()}"></span></h1>
+<p class="muted" th:text="${payment.merchantId()} + ' — order ' + ${payment.orderReference()}"></p>
+
+<table>
+    <tr><th>Status</th><td th:text="${payment.status()} + ' — ' + ${payment.status().name()}"></td></tr>
+    <tr><th>Card</th>
+        <td class="mono" th:text="${payment.card().masked()} + ' · ' + ${payment.card().scheme().displayName()}
+                                  + ' · expires ' + ${payment.card().expiry()}"></td></tr>
+    <tr><th>Token</th><td class="mono" th:text="${payment.card().token()}"></td></tr>
+    <tr><th>Payment account reference</th><td class="mono" th:text="${payment.card().par()}"></td></tr>
+    <tr><th>Requested</th><td class="num" th:text="${payment.requestedAmount()}"></td></tr>
+    <tr><th>Authorized</th><td class="num" th:text="${payment.authorizedAmount()}"></td></tr>
+    <tr><th>Captured</th><td class="num" th:text="${payment.capturedAmount()}"></td></tr>
+    <tr><th>Refunded</th><td class="num" th:text="${payment.refundedAmount()}"></td></tr>
+    <tr><th>Uncaptured</th><td class="num" th:text="${payment.uncapturedAmount()}"></td></tr>
+    <tr><th>Still refundable</th><td class="num" th:text="${payment.refundableAmount()}"></td></tr>
+    <tr><th>Processor</th>
+        <td th:text="${payment.processorId()} + ' · ref ' + ${payment.processorReference()}
+                     + ' · auth code ' + ${payment.authorizationCode()}"></td></tr>
+    <tr><th>Authorization expires</th><td class="mono" th:text="${payment.authorizationExpiresAt()}"></td></tr>
+    <tr><th>Routing</th><td th:text="${payment.routingExplanation()}"></td></tr>
+</table>
+
+<h2 th:if="${payment.risk() != null}">Risk assessment</h2>
+<div th:if="${payment.risk() != null}">
+    <p>
+        Score <strong th:text="${payment.risk().score()}"></strong>,
+        band <strong th:text="${payment.risk().band()}"></strong>,
+        decision <strong th:text="${payment.risk().decision()}"></strong>.
+    </p>
+    <table>
+        <tr><th>Rule</th><th class="num">Points</th><th>Why it fired</th></tr>
+        <tr th:each="r : ${payment.risk().reasons()}">
+            <td class="mono" th:text="${r.rule()}"></td>
+            <td class="num" th:text="${r.points()}"></td>
+            <td th:text="${r.detail()}"></td>
+        </tr>
+    </table>
+    <p th:if="${#lists.isEmpty(payment.risk().reasons())}" class="muted">No rules fired.</p>
+</div>
+
+<h2 th:if="${payment.authentication() != null}">3-D Secure</h2>
+<table th:if="${payment.authentication() != null}">
+    <tr><th>Outcome</th><td th:text="${payment.authentication().outcome()}"></td></tr>
+    <tr><th>Protocol version</th><td th:text="${payment.authentication().version()}"></td></tr>
+    <tr><th>ECI</th><td class="mono" th:text="${payment.authentication().eci()}"></td></tr>
+    <tr><th>Cryptogram (CAVV)</th><td class="mono" th:text="${payment.authentication().cavv()}"></td></tr>
+    <tr><th>DS transaction id</th><td class="mono" th:text="${payment.authentication().dsTransactionId()}"></td></tr>
+    <tr><th>SCA exemption</th><td th:text="${payment.authentication().exemption()}"></td></tr>
+    <tr><th>Liability</th>
+        <td th:class="${payment.authentication().liabilityShift()} ? 'ok' : 'warn'"
+            th:text="${payment.authentication().liabilityShift()}
+                     ? 'shifted to the issuer' : 'retained by the acquirer'"></td></tr>
+    <tr><th>Reason</th><td th:text="${payment.authentication().reason()}"></td></tr>
+</table>
+
+<h2>Lifecycle</h2>
+<table>
+    <tr><th>From</th><th>To</th><th>Reason</th><th>At</th></tr>
+    <tr th:each="h : ${payment.history()}">
+        <td th:text="${h.from()}"></td>
+        <td th:text="${h.to()}"></td>
+        <td th:text="${h.reason()}"></td>
+        <td class="mono" th:text="${h.at()}"></td>
+    </tr>
+</table>
+
+<h2 th:if="${not #lists.isEmpty(payment.captures())}">Captures</h2>
+<table th:if="${not #lists.isEmpty(payment.captures())}">
+    <tr><th>Capture</th><th class="num">Amount</th><th>At</th><th>Settlement batch</th></tr>
+    <tr th:each="c : ${payment.captures()}">
+        <td class="mono" th:text="${c.captureId()}"></td>
+        <td class="num" th:text="${c.amount()}"></td>
+        <td class="mono" th:text="${c.capturedAt()}"></td>
+        <td class="mono" th:text="${c.isSettled()} ? ${c.settlementBatchId()} : 'not yet swept'"></td>
+    </tr>
+</table>
+
+<h2 th:if="${not #lists.isEmpty(payment.refunds())}">Refunds</h2>
+<table th:if="${not #lists.isEmpty(payment.refunds())}">
+    <tr><th>Refund</th><th class="num">Amount</th><th>Reason</th><th>At</th></tr>
+    <tr th:each="r : ${payment.refunds()}">
+        <td class="mono" th:text="${r.refundId()}"></td>
+        <td class="num" th:text="${r.amount()}"></td>
+        <td th:text="${r.reason()}"></td>
+        <td class="mono" th:text="${r.refundedAt()}"></td>
+    </tr>
+</table>
+
+<h2 th:if="${not #lists.isEmpty(disputes)}">Disputes</h2>
+<table th:if="${not #lists.isEmpty(disputes)}">
+    <tr><th>Case</th><th>Reason</th><th>Status</th><th>Outcome</th><th>Evidence filed</th></tr>
+    <tr th:each="d : ${disputes}">
+        <td class="mono" th:text="${d.caseId()}"></td>
+        <td th:text="${d.reason().code()} + ' ' + ${d.reason().description()}"></td>
+        <td th:text="${d.status()}"></td>
+        <td th:text="${d.outcomeReason()}"></td>
+        <td><span th:each="e : ${d.evidence()}" th:text="${e}">,</span></td>
+    </tr>
+</table>
+
+<h2>Journal entries</h2>
+<p class="muted">
+    Note that authorization produced none: it moves no money. The first entry here is the
+    capture.
+</p>
+<table>
+    <tr><th class="num">Seq</th><th>Description</th><th>Account</th><th>Dr/Cr</th>
+        <th class="num">Amount</th><th>Narrative</th></tr>
+    <th:block th:each="e : ${journal}">
+        <tr th:each="p, iter : ${e.postings()}">
+            <td class="num" th:text="${iter.first} ? ${e.sequence()} : ''"></td>
+            <td th:text="${iter.first} ? ${e.description()} : ''"></td>
+            <td class="mono" th:text="${p.accountId()}"></td>
+            <td th:text="${p.direction()}"></td>
+            <td class="num" th:text="${p.amount()}"></td>
+            <td class="muted" th:text="${p.narrative()}"></td>
+        </tr>
+    </th:block>
+</table>
+<p th:if="${#lists.isEmpty(journal)}" class="muted">
+    Nothing has been booked for this payment — consistent with an authorization that was never
+    captured, or a payment that was declined.
+</p>
+
+<h2>Audit trail</h2>
+<table>
+    <tr><th class="num">Seq</th><th>Actor</th><th>Action</th><th>Detail</th><th>At</th></tr>
+    <tr th:each="a : ${audit}">
+        <td class="num" th:text="${a.sequence()}"></td>
+        <td th:text="${a.actor()}"></td>
+        <td class="mono" th:text="${a.action()}"></td>
+        <td>
+            <div th:each="m : ${a.metadata()}" class="muted">
+                <span class="mono" th:text="${m.key}"></span>: <span th:text="${m.value}"></span>
+            </div>
+        </td>
+        <td class="mono" th:text="${a.at()}"></td>
+    </tr>
+</table>
+
+<p><a href="/payments/cards">Back to card payments</a></p>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Settlement and reconciliation')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Settlement and reconciliation</h1>
+<p class="muted">
+    Three clocks, kept distinct: the cut-off decides which transactions batch together, funding
+    is when the acquirer's money arrives, and payout is when the merchant is paid. Collapsing
+    them produces a balance sheet that cannot be tied to a bank statement.
+</p>
+
+<table>
+    <tr><th>Captured, not yet swept into a batch</th>
+        <td class="num" th:text="${unsettledCaptures}"></td></tr>
+    <tr><th>Open disputes</th><td class="num" th:text="${#lists.size(openDisputes)}"></td></tr>
+    <tr><th>Breaks serious enough to stop a payout</th>
+        <td class="num" th:text="${#lists.size(blockingBreaks)}"
+            th:classappend="${#lists.isEmpty(blockingBreaks)} ? 'ok' : 'bad'"></td></tr>
+</table>
+
+<form method="post" action="/payments/settlement/cut-off" class="inline">
+    <button type="submit">Run a settlement cut-off</button>
+</form>
+
+<h2>Settlement batches</h2>
+<table>
+    <caption>
+        Acquirer funding and merchant payout differ by the margin; both are tracked, because
+        netting them hides the P&amp;L.
+    </caption>
+    <tr>
+        <th>Batch</th><th>Merchant</th><th>Processor</th><th class="num">Txns</th>
+        <th class="num">Gross</th><th class="num">Refunds</th><th class="num">Disputes</th>
+        <th class="num">Merchant discount</th><th class="num">Interchange + scheme</th>
+        <th class="num">Acquirer funding</th><th class="num">Merchant payout</th>
+        <th class="num">Margin</th><th>Status</th><th>Funding date</th>
+    </tr>
+    <tr th:each="b : ${batches}">
+        <td class="mono" th:text="${b.batchId()}"></td>
+        <td th:text="${b.merchantId()}"></td>
+        <td th:text="${b.processorId()}"></td>
+        <td class="num" th:text="${b.transactionCount()}"></td>
+        <td class="num" th:text="${b.grossSales()}"></td>
+        <td class="num" th:text="${b.refunds()}"></td>
+        <td class="num" th:text="${b.chargebacks()}"></td>
+        <td class="num" th:text="${b.merchantDiscount()}"></td>
+        <td class="num" th:text="${b.interchangeAndSchemeFees()}"></td>
+        <td class="num" th:text="${b.acquirerFunding()}"></td>
+        <td class="num" th:text="${b.netPayout()}"
+            th:classappend="${b.isNegative()} ? 'warn' : ''"></td>
+        <td class="num" th:text="${b.margin()}"></td>
+        <td>
+            <span th:text="${b.status()}"
+                  th:classappend="${b.status().name() == 'HELD'} ? 'bad'
+                                 : (${b.status().name() == 'PAID_OUT'} ? 'ok' : 'warn')"></span>
+            <div class="bad" th:if="${b.holdReason() != null}" th:text="${b.holdReason()}"></div>
+        </td>
+        <td class="mono" th:text="${b.expectedFundingDate()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(batches)}" class="muted">No batches yet.</p>
+
+<h2>Reconciliation runs</h2>
+<p class="muted">
+    Three legs: internal ledger against the processor's settlement report, the report against
+    the bank statement, and the ledger against itself. Each catches something the others cannot.
+</p>
+<table>
+    <tr>
+        <th>Run</th><th>Batch</th><th class="num">Matched</th>
+        <th class="num">Within tolerance</th><th class="num">Breaks</th>
+        <th class="num">Internal total</th><th class="num">Report total</th>
+        <th class="num">Bank total</th><th class="num">Unexplained</th><th>Summary</th>
+    </tr>
+    <tr th:each="r : ${runs}">
+        <td class="mono" th:text="${r.runId()}"></td>
+        <td class="mono" th:text="${r.batchId()}"></td>
+        <td class="num" th:text="${r.matchedCount()}"></td>
+        <td class="num" th:text="${r.withinToleranceCount()}"></td>
+        <td class="num" th:text="${#lists.size(r.breaks())}"
+            th:classappend="${r.isClean()} ? 'ok' : 'bad'"></td>
+        <td class="num" th:text="${r.internalTotal()}"></td>
+        <td class="num" th:text="${r.externalTotal()}"></td>
+        <td class="num" th:text="${r.bankTotal()}"></td>
+        <td class="num" th:text="${r.unexplainedDifference()}"
+            th:classappend="${r.unexplainedDifference().isZero()} ? 'ok' : 'bad'"></td>
+        <td th:text="${r.summary()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(runs)}" class="muted">Reconciliation has not run yet.</p>
+
+<h2>Open breaks, by age</h2>
+<p class="muted">
+    A break found today is normal; the same break open after a month is a control failure, which
+    is why severity rises with age rather than with amount alone.
+</p>
+<div th:each="bucket : ${agedBreaks}">
+    <h3 th:text="${bucket.key} + ' (' + ${#lists.size(bucket.value)} + ')'"></h3>
+    <table>
+        <tr><th>Type</th><th>Severity</th><th>Reference</th><th>Payment</th>
+            <th class="num">Internal</th><th class="num">External</th><th class="num">Difference</th>
+            <th>Description</th></tr>
+        <tr th:each="b : ${bucket.value}">
+            <td th:text="${b.type()}"></td>
+            <td><span th:text="${b.severity(now)}"
+                      th:classappend="${b.severity(now).name() == 'CRITICAL'
+                                       or b.severity(now).name() == 'HIGH'} ? 'bad' : 'warn'"></span></td>
+            <td class="mono" th:text="${b.reference()}"></td>
+            <td class="mono" th:text="${b.paymentId()}"></td>
+            <td class="num" th:text="${b.internalAmount()}"></td>
+            <td class="num" th:text="${b.externalAmount()}"></td>
+            <td class="num" th:text="${b.difference()}"></td>
+            <td th:text="${b.description()}"></td>
+        </tr>
+    </table>
+</div>
+<p th:if="${#maps.isEmpty(agedBreaks)}" class="ok">Nothing outstanding.</p>
+
+</body>
+</html>

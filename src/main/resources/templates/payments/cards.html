@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Card payments')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Card payments</h1>
+<p class="muted">
+    Authorization holds no money — capture does. The three amount columns are tracked
+    separately for that reason, and the status is derived from them rather than set by hand.
+</p>
+
+<table>
+    <caption>Click a payment id for its full history, journal entries and audit trail.</caption>
+    <tr>
+        <th>Payment</th><th>Merchant</th><th>Card</th><th>Status</th>
+        <th class="num">Requested</th><th class="num">Authorized</th>
+        <th class="num">Captured</th><th class="num">Refunded</th>
+        <th>Risk</th><th>3-D Secure</th><th>Processor</th>
+    </tr>
+    <tr th:each="p : ${payments}">
+        <td class="mono"><a th:href="@{'/payments/cards/' + ${p.paymentId()}}"
+                            th:text="${p.paymentId()}"></a></td>
+        <td th:text="${p.merchantId()}"></td>
+        <td class="mono" th:text="${p.card().masked()} + ' ' + ${p.card().scheme().displayName()}"></td>
+        <td>
+            <span th:text="${p.status()}"
+                  th:classappend="${p.status().name() == 'AUTHORIZATION_DECLINED'
+                                    or p.status().name() == 'CHARGED_BACK'
+                                    or p.status().name() == 'FAILED'} ? 'bad'
+                                 : (${p.status().name() == 'REQUIRES_AUTHENTICATION'
+                                    or p.status().name() == 'EXPIRED'} ? 'warn' : 'ok')"></span>
+            <div class="muted" th:if="${p.declineCode() != null}"
+                 th:text="${p.declineCode().code()} + ' ' + ${p.declineCode().description()}
+                          + (${p.declineCode().isSoftDecline()} ? ' (soft)' : ' (hard)')"></div>
+        </td>
+        <td class="num" th:text="${p.requestedAmount()}"></td>
+        <td class="num" th:text="${p.authorizedAmount()}"></td>
+        <td class="num" th:text="${p.capturedAmount()}"></td>
+        <td class="num" th:text="${p.refundedAmount()}"></td>
+        <td th:if="${p.risk() != null}">
+            <span th:text="${p.risk().score()} + ' / ' + ${p.risk().band()}"
+                  th:classappend="${p.risk().band().name() == 'LOW'} ? 'ok'
+                                 : (${p.risk().band().name() == 'CRITICAL'} ? 'bad' : 'warn')"></span>
+        </td>
+        <td th:if="${p.risk() == null}" class="muted">—</td>
+        <td th:if="${p.authentication() != null}">
+            <span th:text="${p.authentication().outcome()}"></span>
+            <div class="muted" th:if="${p.authentication().exemption().name() != 'NONE'}"
+                 th:text="'exemption: ' + ${p.authentication().exemption()}"></div>
+            <div th:class="${p.authentication().liabilityShift()} ? 'ok' : 'warn'"
+                 th:text="${p.authentication().liabilityShift()}
+                          ? 'liability shifted to issuer' : 'liability retained'"></div>
+        </td>
+        <td th:if="${p.authentication() == null}" class="muted">—</td>
+        <td th:text="${p.processorId()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(payments)}" class="muted">No payments yet.</p>
+
+<h2>Dispute ratios</h2>
+<p class="muted">
+    Schemes act on the ratio, not the absolute loss. Above 0.9% a merchant enters a monitoring
+    programme with per-dispute fines, which is why small disputes matter disproportionately.
+</p>
+<table>
+    <tr><th>Merchant</th><th class="num">Disputes</th><th class="num">Captured transactions</th>
+        <th class="num">Ratio</th><th>Scheme monitoring</th></tr>
+    <tr th:each="r : ${ratios}">
+        <td th:text="${r.merchantId()}"></td>
+        <td class="num" th:text="${r.disputes()}"></td>
+        <td class="num" th:text="${r.capturedTransactions()}"></td>
+        <td class="num" th:text="${r.formattedRatio()}"></td>
+        <td><span th:if="${r.inMonitoringProgramme()}" class="bad">above threshold</span>
+            <span th:unless="${r.inMonitoringProgramme()}" class="ok">within threshold</span></td>
+    </tr>
+</table>
+
+<h2>Disputes</h2>
+<table>
+    <tr>
+        <th>Case</th><th>Payment</th><th>Merchant</th><th>Reason</th>
+        <th class="num">Amount</th><th class="num">Fee</th><th>Status</th>
+        <th>Representment deadline</th><th>Outcome</th>
+    </tr>
+    <tr th:each="d : ${disputes}">
+        <td class="mono" th:text="${d.caseId()}"></td>
+        <td class="mono"><a th:href="@{'/payments/cards/' + ${d.paymentId()}}"
+                            th:text="${d.paymentId()}"></a></td>
+        <td th:text="${d.merchantId()}"></td>
+        <td>
+            <span th:text="${d.reason().code()} + ' ' + ${d.reason().description()}"></span>
+            <div class="muted" th:text="'evidence expected: ' + ${d.reason().evidenceExpected()}"></div>
+        </td>
+        <td class="num" th:text="${d.disputedAmount()}"></td>
+        <td class="num" th:text="${d.fee()}"></td>
+        <td><span th:text="${d.status()}"
+                  th:classappend="${d.status().name() == 'WON'} ? 'ok'
+                                 : (${d.status().name() == 'LOST'} ? 'bad' : 'warn')"></span></td>
+        <td class="mono" th:text="${d.representmentDeadline()}"></td>
+        <td th:text="${d.outcomeReason()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(disputes)}" class="muted">No disputes.</p>
+
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Ledger')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Double-entry ledger</h1>
+<p class="muted">
+    Append-only. There is no update and no delete — a mistake is corrected by posting a
+    reversing entry, so the wrong figure and its correction both stay visible. Balances are
+    folded over the postings rather than stored, so they cannot drift from the journal that is
+    supposed to explain them.
+</p>
+
+<table>
+    <tr><th>Journal entries</th><td class="num" th:text="${#lists.size(entries)}"></td></tr>
+    <tr><th>Trial balance</th>
+        <td>
+            <span th:if="${trialBalance.balances()}" class="ok">
+                debits equal credits in every currency
+            </span>
+            <span th:unless="${trialBalance.balances()}" class="bad">DOES NOT BALANCE</span>
+        </td></tr>
+    <tr><th>Hash chain</th>
+        <td>
+            <span th:if="${integrity.intact()}" class="ok">
+                verified across <span th:text="${integrity.entriesChecked()}"></span> entries
+            </span>
+            <span th:unless="${integrity.intact()}" class="bad"
+                  th:text="'broken at ' + ${integrity.failedEntryId()} + ': ' + ${integrity.reason()}"></span>
+        </td></tr>
+</table>
+
+<h2>Trial balance</h2>
+<table>
+    <caption>Accounts with a zero balance are omitted.</caption>
+    <tr><th>Account</th><th>Type</th><th class="num">Debit</th><th class="num">Credit</th></tr>
+    <tr th:each="a : ${accounts}"
+        th:if="${trialBalance.debitBalances().containsKey(a.id())
+                or trialBalance.creditBalances().containsKey(a.id())}">
+        <td class="mono" th:text="${a.id()}"></td>
+        <td th:text="${a.type()}"></td>
+        <td class="num" th:text="${trialBalance.debitBalances().containsKey(a.id())}
+                                 ? ${trialBalance.debitBalances().get(a.id())} : ''"></td>
+        <td class="num" th:text="${trialBalance.creditBalances().containsKey(a.id())}
+                                 ? ${trialBalance.creditBalances().get(a.id())} : ''"></td>
+    </tr>
+    <tr>
+        <th colspan="2">Totals</th>
+        <th class="num">
+            <span th:each="t : ${trialBalance.totalDebits()}" th:text="${t.value}"></span>
+        </th>
+        <th class="num">
+            <span th:each="t : ${trialBalance.totalCredits()}" th:text="${t.value}"></span>
+        </th>
+    </tr>
+</table>
+
+<h2>Chart of accounts</h2>
+<table>
+    <tr><th>Account</th><th>Name</th><th>Type</th><th>Currency</th>
+        <th class="num">Balance (natural side)</th></tr>
+    <tr th:each="a : ${accounts}">
+        <td class="mono" th:text="${a.id()}"></td>
+        <td th:text="${a.name()}"></td>
+        <td th:text="${a.type()}"></td>
+        <td th:text="${a.currency()}"></td>
+        <td class="num" th:text="${balances.get(a.id())}"></td>
+    </tr>
+</table>
+
+<h2>Journal</h2>
+<p class="muted">Most recent first. Each entry balances in every currency it touches.</p>
+<table>
+    <tr><th class="num">Seq</th><th>Description</th><th>Reference</th>
+        <th>Account</th><th>Dr/Cr</th><th class="num">Amount</th>
+        <th>Effective</th><th>Hash</th></tr>
+    <th:block th:each="e : ${entries}">
+        <tr th:each="p, iter : ${e.postings()}">
+            <td class="num" th:text="${iter.first} ? ${e.sequence()} : ''"></td>
+            <td th:text="${iter.first} ? ${e.description()} : ''"></td>
+            <td class="mono" th:text="${iter.first} ? ${e.reference()} : ''"></td>
+            <td class="mono" th:text="${p.accountId()}"></td>
+            <td th:text="${p.direction()}"></td>
+            <td class="num" th:text="${p.amount()}"></td>
+            <td class="mono" th:text="${iter.first} ? ${e.effectiveAt()} : ''"></td>
+            <td class="mono muted"
+                th:text="${iter.first} ? ${#strings.substring(e.hash(), 0, 12)} : ''"></td>
+        </tr>
+    </th:block>
+</table>
+<p th:if="${#lists.isEmpty(entries)}" class="muted">The journal is empty.</p>
+
+</body>
+</html>

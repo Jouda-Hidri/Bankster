@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Events')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Outbox and event delivery</h1>
+<p class="muted">
+    The event is written alongside the state change it describes, and a separate dispatcher moves
+    it outward. That removes the distributed commit: state and announcement can no longer
+    disagree, only be temporarily out of step — which is what eventual consistency means in
+    practice.
+</p>
+<p class="muted">
+    Delivery is at-least-once, because a lost acknowledgement is indistinguishable from a lost
+    delivery. Exactly-once <em>processing</em> is reconstructed at the consumer: each handler
+    records the event ids it has applied and skips repeats.
+</p>
+
+<table>
+    <tr><th>Attempts before dead-lettering</th><td class="num" th:text="${maxAttempts}"></td></tr>
+    <tr><th>Webhook deliveries</th><td class="num" th:text="${#lists.size(deliveries)}"></td></tr>
+    <tr><th>Dead letters</th><td class="num" th:text="${#lists.size(deadLetters)}"
+                                th:classappend="${#lists.isEmpty(deadLetters)} ? 'ok' : 'warn'"></td></tr>
+    <tr><th>Event types the simulated merchant endpoint is rejecting</th>
+        <td th:text="${#lists.isEmpty(failingTypes)} ? 'none' : ${#strings.listJoin(failingTypes, ', ')}"></td></tr>
+</table>
+
+<form method="post" action="/payments/events/drain" class="inline">
+    <button type="submit">Drain the outbox</button>
+</form>
+
+<h2 th:if="${not #lists.isEmpty(deadLetters)}">Dead letters</h2>
+<table th:if="${not #lists.isEmpty(deadLetters)}">
+    <caption>
+        Parked after repeated failures rather than retried forever, so they do not block the
+        events behind them. Replay is safe: handlers that already applied the event stay
+        deduplicated.
+    </caption>
+    <tr><th>Event</th><th>Type</th><th>Subject</th><th class="num">Attempts</th>
+        <th>Last error</th><th></th></tr>
+    <tr th:each="r : ${deadLetters}">
+        <td class="mono" th:text="${r.event().eventId()}"></td>
+        <td class="mono" th:text="${r.event().type()}"></td>
+        <td class="mono" th:text="${r.event().subject()}"></td>
+        <td class="num" th:text="${r.attempts()}"></td>
+        <td class="bad" th:text="${r.lastError()}"></td>
+        <td>
+            <form method="post" th:action="@{'/payments/events/replay/' + ${r.event().eventId()}}"
+                  class="inline">
+                <button type="submit">Recover endpoint and replay</button>
+            </form>
+        </td>
+    </tr>
+</table>
+
+<h2>Outbox</h2>
+<table>
+    <tr><th>Event</th><th>Type</th><th>Subject</th><th>Status</th>
+        <th class="num">Attempts</th><th>Payload</th><th>Occurred</th></tr>
+    <tr th:each="r : ${records}">
+        <td class="mono" th:text="${#strings.substring(r.event().eventId(), 0, 8)}"></td>
+        <td class="mono" th:text="${r.event().type()}"></td>
+        <td class="mono" th:text="${r.event().subject()}"></td>
+        <td><span th:text="${r.status()}"
+                  th:classappend="${r.status().name() == 'DISPATCHED'} ? 'ok'
+                                 : (${r.status().name() == 'DEAD_LETTERED'} ? 'bad' : 'warn')"></span></td>
+        <td class="num" th:text="${r.attempts()}"></td>
+        <td>
+            <div th:each="p : ${r.event().payload()}" class="muted">
+                <span class="mono" th:text="${p.key}"></span>: <span th:text="${p.value}"></span>
+            </div>
+        </td>
+        <td class="mono" th:text="${r.event().occurredAt()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(records)}" class="muted">No events.</p>
+
+<h2>Webhook deliveries</h2>
+<table>
+    <tr><th>Event</th><th>Type</th><th>Subject</th><th>At</th></tr>
+    <tr th:each="d : ${deliveries}">
+        <td class="mono" th:text="${#strings.substring(d.eventId(), 0, 8)}"></td>
+        <td class="mono" th:text="${d.eventType()}"></td>
+        <td class="mono" th:text="${d.subject()}"></td>
+        <td class="mono" th:text="${d.at()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(deliveries)}" class="muted">Nothing delivered.</p>
+
+</body>
+</html>

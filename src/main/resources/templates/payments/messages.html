@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('ISO 20022')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Payment messages</h1>
+<p class="muted">
+    ISO 20022 replaced a generation of formats because it carries structured data where the old
+    ones carried free text, uses one model across initiation, clearing and reporting, and returns
+    standard reason codes instead of prose. The MT103 below is shown alongside for contrast.
+</p>
+
+<h2>pain.001 — customer credit transfer initiation</h2>
+<p class="muted">
+    What a customer sends its bank to instruct payments. Two details carry real weight:
+    <span class="mono">CtrlSum</span> is checked by the receiving bank, so a truncated file is
+    rejected whole rather than executed in part; and <span class="mono">LclInstrm/Cd</span> set to
+    <span class="mono">INST</span> is how the instant rail is actually requested — the same message
+    without it is a standard transfer.
+</p>
+<pre th:if="${demoSummary != null}" th:text="${demoSummary.pain001()}"></pre>
+<p th:if="${demoSummary == null}" class="muted">Run the demo scenario to generate messages.</p>
+
+<h2>camt.053 — bank to customer statement</h2>
+<p class="muted">
+    The external record reconciliation runs against. <span class="mono">EndToEndId</span> is what
+    makes automatic matching possible — it is the payer's own reference, preserved unchanged by
+    every institution in the chain. Matching on amount and date alone fails as soon as two
+    payments of the same amount happen on the same day.
+</p>
+<pre th:if="${demoSummary != null}" th:text="${demoSummary.camt053()}"></pre>
+
+<h2>MT103 — the legacy cross-border format</h2>
+<p class="muted">
+    Positional and tag-driven. <span class="mono">:32A:</span> carries value date, currency and
+    settled amount; <span class="mono">:33B:</span> the original instructed amount before
+    conversion; <span class="mono">:36:</span> the rate applied; <span class="mono">:71A:</span>
+    who bears the charges. Amounts use a comma as the decimal separator and no thousands
+    separator. Remittance information gets one field of 140 characters — which is the whole
+    argument for migrating to ISO 20022.
+</p>
+<pre th:if="${demoSummary != null and demoSummary.mt103() != ''}" th:text="${demoSummary.mt103()}"></pre>
+<p th:if="${demoSummary != null and demoSummary.mt103() == ''}" class="muted">
+    No cross-border payment was routable in the last demo run.
+</p>
+
+</body>
+</html>

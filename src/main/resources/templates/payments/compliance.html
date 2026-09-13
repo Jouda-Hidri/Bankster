@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Compliance')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Compliance</h1>
+<p class="muted">
+    Fraud asks whether this transaction will cost us money — we are the victim. AML asks whether
+    this money is clean and whether we are being used to move it — we are the instrument, and the
+    obligation is to detect and report rather than merely to block.
+</p>
+
+<h2>Suspicious activity reports</h2>
+<table>
+    <tr><th>Report</th><th>Customer</th><th>Typologies</th><th>Narrative</th><th>Filed</th></tr>
+    <tr th:each="r : ${reports}">
+        <td class="mono" th:text="${r.reportId()}"></td>
+        <td th:text="${r.customerId()}"></td>
+        <td th:text="${#strings.listJoin(r.typologies(), ', ')}"></td>
+        <td th:text="${r.narrative()}"></td>
+        <td class="mono" th:text="${r.filedAt()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(reports)}" class="muted">No reports filed.</p>
+
+<h2>Monitored transactions</h2>
+<p class="muted">
+    The population the structuring, pass-through and profile-departure rules run over. Each rule
+    needs history — none of them can fire on a single transaction.
+</p>
+<table>
+    <tr><th>Customer</th><th>Direction</th><th class="num">Amount</th>
+        <th>Counterparty</th><th>Country</th><th>At</th></tr>
+    <tr th:each="t : ${monitored}">
+        <td th:text="${t.customerId()}"></td>
+        <td th:text="${t.direction()}"></td>
+        <td class="num" th:text="${t.amount()}"></td>
+        <td th:text="${t.counterpartyName()}"></td>
+        <td th:text="${t.counterpartyCountry()}"></td>
+        <td class="mono" th:text="${t.at()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(monitored)}" class="muted">Nothing monitored yet.</p>
+
+<h2>Compliance event log</h2>
+<p class="muted">
+    A second, independent subscriber to the same events the webhook dispatcher receives. It keeps
+    the cases where a customer was refused or did not get what they asked for — the ones somebody
+    eventually asks about.
+</p>
+<table>
+    <tr><th>Event</th><th>Subject</th><th>Detail</th><th>At</th></tr>
+    <tr th:each="r : ${complianceRecords}">
+        <td class="mono" th:text="${r.eventType()}"></td>
+        <td class="mono" th:text="${r.subject()}"></td>
+        <td>
+            <div th:each="d : ${r.detail()}" class="muted">
+                <span class="mono" th:text="${d.key}"></span>: <span th:text="${d.value}"></span>
+            </div>
+        </td>
+        <td class="mono" th:text="${r.at()}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(complianceRecords)}" class="muted">Nothing recorded.</p>
+
+<h2>Audit trail</h2>
+<p>
+    Hash chain:
+    <span th:if="${auditIntact}" class="ok">intact</span>
+    <span th:unless="${auditIntact}" class="bad">BROKEN — an entry was altered or removed</span>
+    across <span th:text="${#lists.size(auditEvents)}"></span> events.
+</p>
+<table>
+    <tr><th class="num">Seq</th><th>Actor</th><th>Action</th><th>Subject</th>
+        <th>Detail</th><th>At</th></tr>
+    <tr th:each="a : ${auditEvents}">
+        <td class="num" th:text="${a.sequence()}"></td>
+        <td th:text="${a.actor()}"></td>
+        <td class="mono" th:text="${a.action()}"></td>
+        <td class="mono" th:text="${a.subject()}"></td>
+        <td>
+            <div th:each="m : ${a.metadata()}" class="muted">
+                <span class="mono" th:text="${m.key}"></span>: <span th:text="${m.value}"></span>
+            </div>
+        </td>
+        <td class="mono" th:text="${a.at()}"></td>
+    </tr>
+</table>
+
+</body>
+</html>
