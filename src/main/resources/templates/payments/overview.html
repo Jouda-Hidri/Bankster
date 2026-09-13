@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{payments/_layout :: head('Payments console')}"></head>
+<body>
+<nav th:replace="~{payments/_layout :: nav}"></nav>
+
+<h1>Payments console</h1>
+<p class="muted">
+    Card acquiring, SEPA and cross-border transfers, a double-entry ledger, settlement and
+    three-way reconciliation. Everything below was produced by the demo scenario at start-up.
+</p>
+
+<div class="tiles">
+    <div class="tile"><div class="label">Card payments</div>
+        <div class="value" th:text="${paymentCount}">0</div></div>
+    <div class="tile"><div class="label">Transfers</div>
+        <div class="value" th:text="${transferCount}">0</div></div>
+    <div class="tile"><div class="label">Journal entries</div>
+        <div class="value" th:text="${journalEntries}">0</div></div>
+    <div class="tile"><div class="label">Disputes</div>
+        <div class="value" th:text="${disputeCount}">0</div></div>
+    <div class="tile"><div class="label">Settlement batches</div>
+        <div class="value" th:text="${batchCount}">0</div></div>
+    <div class="tile"><div class="label">Open recon breaks</div>
+        <div class="value" th:text="${openBreaks}"
+             th:classappend="${openBreaks > 0} ? 'warn' : 'ok'">0</div></div>
+    <div class="tile"><div class="label">SARs filed</div>
+        <div class="value" th:text="${sarCount}">0</div></div>
+    <div class="tile"><div class="label">Dead-lettered events</div>
+        <div class="value" th:text="${deadLetters}">0</div></div>
+</div>
+
+<h2>Ledger health</h2>
+<table>
+    <tr>
+        <th>Trial balance</th>
+        <td>
+            <span th:if="${trialBalances}" class="ok">debits equal credits in every currency</span>
+            <span th:unless="${trialBalances}" class="bad">DOES NOT BALANCE</span>
+        </td>
+    </tr>
+    <tr>
+        <th>Journal hash chain</th>
+        <td>
+            <span th:if="${integrity.intact()}" class="ok">
+                intact across <span th:text="${integrity.entriesChecked()}">0</span> entries
+            </span>
+            <span th:unless="${integrity.intact()}" class="bad"
+                  th:text="'broken at ' + ${integrity.failedEntryId()} + ' — ' + ${integrity.reason()}">
+            </span>
+        </td>
+    </tr>
+    <tr><th>Safeguarded customer funds</th>
+        <td class="num" th:text="${customerFunds}">0</td></tr>
+    <tr><th>Payments in transit</th>
+        <td class="num" th:text="${inTransit}">0</td></tr>
+    <tr><th>Captured, not yet settled</th>
+        <td class="num" th:text="${unsettledCaptures}">0</td></tr>
+    <tr><th>Refunded</th>
+        <td class="num" th:text="${refundedValue}">0</td></tr>
+    <tr><th>Unreconciled suspense</th>
+        <td class="num" th:text="${suspense}"
+            th:classappend="${suspense.isZero()} ? '' : 'warn'">0</td></tr>
+</table>
+
+<h2>Card routing</h2>
+<p class="muted">
+    Two acquirers are configured. The router filters to those that can handle the scheme and
+    currency and are healthy, then applies the strategy below. Failover follows the remaining
+    candidates, but only for technical failures — an issuer decline is not re-sent elsewhere.
+</p>
+<table>
+    <tr>
+        <th>Processor</th><th>Schemes</th><th>Currencies</th><th>Approval rate</th>
+        <th>Settles in</th><th>Merchant discount</th><th>Healthy</th>
+    </tr>
+    <tr th:each="p : ${processors}">
+        <td th:text="${p.displayName()} + ' (' + ${p.id()} + ')'"></td>
+        <td th:text="${#strings.listJoin(p.supportedSchemes(), ', ')}"></td>
+        <td th:text="${#strings.listJoin(p.supportedCurrencies(), ', ')}"></td>
+        <td class="num" th:text="${#numbers.formatPercent(p.approvalRate(), 1, 1)}"></td>
+        <td th:text="${p.settlementDelay().toDays()} + ' day(s)'"></td>
+        <td class="num"
+            th:text="${p.feeSchedule().merchantDiscountBasisPoints()} + ' bps + '
+                     + ${p.feeSchedule().fixedFeePerTransaction()}"></td>
+        <td><span th:if="${p.isHealthy()}" class="ok">yes</span>
+            <span th:unless="${p.isHealthy()}" class="bad">no</span></td>
+    </tr>
+</table>
+
+<form method="post" action="/payments/routing/strategy" class="inline">
+    <label>Routing strategy:
+        <select name="strategy">
+            <option th:each="s : ${strategies}" th:value="${s}" th:text="${s}"
+                    th:selected="${s == strategy}"></option>
+        </select>
+    </label>
+    <button type="submit">Apply</button>
+</form>
+
+<h2>Rail configuration</h2>
+<table>
+    <tr><th>Instant transfer limit (this institution)</th>
+        <td class="num" th:text="${instantLimit}"></td></tr>
+    <tr><th>High-value threshold (routes to RTGS)</th>
+        <td class="num" th:text="${highValueThreshold}"></td></tr>
+    <tr><th>SEPA Instant rail</th>
+        <td>
+            <span th:if="${instantAvailable}" class="ok">available</span>
+            <span th:unless="${instantAvailable}" class="warn">unavailable — transfers will downgrade</span>
+        </td></tr>
+    <tr><th>Card attempts in the fraud engine's window</th>
+        <td class="num" th:text="${trackedAttempts}"></td></tr>
+</table>
+<p class="muted">
+    The EPC removed the scheme-level €100,000 ceiling on SEPA Instant in October 2025 under the
+    Instant Payments Regulation. The limit above is this institution's own per-transaction
+    limit, which is why it is configurable.
+</p>
+
+<h2 th:if="${demoSummary != null}">What the demo did</h2>
+<ol class="narrative" th:if="${demoSummary != null}">
+    <li th:each="step : ${demoSummary.steps()}" th:utext="${#strings.replace(
+        #strings.escapeXml(step), '&#10;', '<br/>')}"></li>
+</ol>
+
+<form method="post" action="/payments/demo/run" class="inline">
+    <button type="submit">Run the scenario again</button>
+</form>
+<span class="muted"> — adds more history, which makes ageing and velocity behaviour visible.</span>
+
+</body>
+</html>
