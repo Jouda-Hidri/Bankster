@@ -21,6 +21,7 @@ old they are.
 [Routing and orchestration](#payment-routing-and-orchestration--orchestration) ·
 [Banking rails](#banking-rails--rails) ·
 [Smart routing](#smart-routing-when-instant-cannot-be-instant) ·
+[Per-bank instant limits](#the-amount-limit-is-data-not-a-rule) ·
 [Risk and compliance](#risk-and-compliance--risk) ·
 [Settlement and reconciliation](#settlement-and-reconciliation--settlement-recon) ·
 [Engineering primitives](#engineering-primitives--core) ·
@@ -257,10 +258,34 @@ silently downgrade it, leaving the payer believing money has arrived when it has
 by SEPA Credit Transfer instead of SEPA Instant Credit Transfer because the beneficiary's
 bank (Nordea Sweden) is not reachable on SEPA Instant."*
 
-On the amount limit: the EPC removed the scheme-level €100,000 ceiling in October 2025
-under the Instant Payments Regulation, but institutions still apply their own
-per-transaction limits for liquidity and fraud reasons. `payments.instant-transfer-limit`
-is that institution-level limit, which is why it is configurable rather than a constant.
+#### The amount limit is data, not a rule
+
+The EPC removed the scheme-level €100,000 ceiling in October 2025 under the Instant
+Payments Regulation. What remains is each institution's own policy, set for the liquidity
+and fraud reasons that made it a rule in the first place: instant settles 24/7 against a
+pre-funded position that cannot be topped up at 3am on a Sunday, and it is irrevocable, so
+a per-transaction cap bounds the loss from a single push-payment scam.
+
+So there are two limits on any instant transfer and **the lower one binds**:
+
+| | Where it lives | Changes when |
+| --- | --- | --- |
+| Our sending limit | `payments.instant-transfer-limit` | We change our own policy |
+| The beneficiary's receiving limit | `AspspLimitDirectory`, per BIC | That bank changes theirs |
+
+`AspspLimitDirectory#effectiveLimit` picks the binding one and, importantly, remembers
+*which* — quoting the wrong bank's limit back to a payer sends them to argue with the wrong
+institution. Two transfers of the same amount to two different banks can legitimately take
+different rails, which is the behaviour a single global value could not express.
+
+The data lives in `berlin-group-aspsp-limits.json`, read once at start-up and immutable
+thereafter. Changing a limit means editing that file and restarting — there is no update
+API, so routing behaviour cannot move without a commit to review.
+
+A malformed entry is skipped individually and a missing file is tolerated. Either way
+transfers fall back to our own limit, which is conservative and still correct, whereas
+failing to start would take payments down over a data file.
+
 
 ### Risk and compliance — `risk/`
 
@@ -352,7 +377,7 @@ simply wrong.
 | Property | Meaning |
 | --- | --- |
 | `payments.acquirer-fraud-rate-basis-points` | Measured fraud rate; sets the TRA exemption ceiling (13 bps → €100, 6 → €250, 1 → €500) |
-| `payments.instant-transfer-limit` | This institution's per-transaction SEPA Instant limit |
+| `payments.instant-transfer-limit` | *Our* per-transaction SEPA Instant limit; the beneficiary's is per-BIC data, not config |
 | `payments.high-value-threshold` | Above this, an urgent transfer is routed to RTGS |
 | `payments.demo-currency` | Currency the demo scenario operates in |
 | `payments.seed-demo-data` | Whether to populate the console at start-up |
@@ -404,7 +429,7 @@ sandbox certificate is still what `bootRun` uses.
 Every run happens on GitHub Actions — Java 21, `./gradlew test`, with failures annotated
 onto the diff. See `.github/workflows/build.yml`.
 
-384 tests. The interesting ones are the failure paths rather than the happy ones:
+404 tests. The interesting ones are the failure paths rather than the happy ones:
 over-capture and over-refund, idempotent replay and key-reuse conflict, saga compensation
 including a compensation that itself fails, a dispute defeated by liability shift and the
 reversal of the loss absorbed along the way, every kind of reconciliation break, and each

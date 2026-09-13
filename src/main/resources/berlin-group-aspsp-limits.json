@@ -1,0 +1,54 @@
+{
+  "_comment": [
+    "Per-ASPSP SEPA Instant receiving limits, scoped to Berlin Group NextGenPSD2",
+    "participants — the framework this application already speaks.",
+    "",
+    "Since the EPC removed the scheme-level ceiling, the maximum on an instant transfer is",
+    "each institution's own policy rather than a rule, so it has to be data. This file is",
+    "that data. It is read once at start-up and is immutable thereafter: to change a limit,",
+    "edit the entry and restart. There is deliberately no API for changing one at runtime,",
+    "so routing behaviour cannot move without a commit to review.",
+    "",
+    "'maximum' absent means the bank has declared no ceiling — not that it accepts nothing.",
+    "Only institutions reachable on SEPA Instant need an entry; a bank that is not on the",
+    "scheme is handled by ReachabilityDirectory and never gets this far.",
+    "",
+    "These are illustrative values for a sandbox. A production deployment takes them from",
+    "the EPC routing and reachability directory and each ASPSP's published API terms."
+  ],
+
+  "aspsps": [
+    {
+      "bic": "DEUTDEFF",
+      "name": "Deutsche Bank",
+      "country": "DE",
+      "maximum": "100000.00",
+      "note": "Large participant; the old scheme ceiling retained as its own policy."
+    },
+    {
+      "bic": "LHVBEE22",
+      "name": "LHV Pank",
+      "country": "EE",
+      "maximum": "50000.00"
+    },
+    {
+      "bic": "INGBNL2A",
+      "name": "ING Bank",
+      "country": "NL",
+      "maximum": "25000.00"
+    },
+    {
+      "bic": "REVOLT21",
+      "name": "Revolut",
+      "country": "LT",
+      "maximum": "15000.00",
+      "note": "Smaller institution, tighter per-transaction ceiling for liquidity reasons."
+    },
+    {
+      "bic": "BNPAFRPP",
+      "name": "BNP Paribas",
+      "country": "FR",
+      "note": "No ceiling declared, so only the sending institution's limit applies."
+    }
+  ]
+}

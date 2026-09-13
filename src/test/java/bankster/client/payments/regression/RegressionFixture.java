@@ -28,6 +28,7 @@ import bankster.client.payments.ledger.Ledger;
 import bankster.client.payments.orchestration.PaymentBookkeeper;
 import bankster.client.payments.orchestration.PaymentRepository;
 import bankster.client.payments.orchestration.PaymentRouter;
+import bankster.client.payments.rails.AspspLimitDirectory;
 import bankster.client.payments.rails.CorrespondentNetwork;
 import bankster.client.payments.rails.FxRates;
 import bankster.client.payments.rails.IbanBicDirectory;
@@ -91,6 +92,7 @@ final class RegressionFixture {
     final AmlService aml = new AmlService(clock, sanctions);
     final ReachabilityDirectory reachability = new ReachabilityDirectory();
     final IbanBicDirectory bicDirectory = new IbanBicDirectory();
+    final AspspLimitDirectory aspspLimits;
     final SepaRouter sepaRouter;
     final TransferBookkeeper transferBookkeeper = new TransferBookkeeper(ledger);
     final SepaPaymentService sepa;
@@ -113,7 +115,8 @@ final class RegressionFixture {
         reconciliation = new ReconciliationService(clock, payments, chargebacks, settlements,
                 ledger, auditTrail, outbox);
 
-        sepaRouter = new SepaRouter(clock, reachability, bicDirectory);
+        aspspLimits = new AspspLimitDirectory();
+        sepaRouter = new SepaRouter(clock, reachability, bicDirectory, aspspLimits);
         sepa = new SepaPaymentService(clock, sepaRouter, bicDirectory, aml, transferBookkeeper,
                 auditTrail, outbox, idempotency);
         swift = new SwiftService(clock, network, fxRates, transferBookkeeper, auditTrail, outbox);

@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "A fixture for the directory tests. Separate from the shipped file so that changing a",
+    "real limit does not silently rewrite what the tests assert, and so the awkward cases —",
+    "a bad BIC, an unparseable amount — can be exercised without putting",
+    "deliberately broken data in front of anyone reading the real one."
+  ],
+
+  "aspsps": [
+    {
+      "bic": "DEUTDEFF",
+      "name": "Deutsche Bank",
+      "country": "DE",
+      "maximum": "100000.00"
+    },
+    {
+      "bic": "INGBNL2A",
+      "name": "ING Bank",
+      "country": "NL",
+      "maximum": "25000.00"
+    },
+    {
+      "bic": "BNPAFRPP",
+      "name": "BNP Paribas",
+      "country": "FR"
+    },
+    {
+      "bic": "NOTABIC!",
+      "name": "Unusable BIC, skipped",
+      "country": "??",
+      "maximum": "1000.00"
+    },
+    {
+      "bic": "CRESCHZZ",
+      "name": "Unparseable amount, skipped",
+      "country": "CH",
+      "maximum": "not a number"
+    },
+    {
+      "bic": "MTLCMT21",
+      "name": "No confirmation date",
+      "country": "MT",
+      "maximum": "5000.00"
+    }
+  ]
+}
