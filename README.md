@@ -393,6 +393,17 @@ sentiment. It needs the sentiment service from `finbert.py` running on
 ./gradlew test --tests 'bankster.client.payments.regression.*'
 ```
 
+No setup step. `Psd2Config` refuses to start without a TPP keystore and
+`PaymentsWiringTest` boots the whole application context, so the build generates a
+throwaway self-signed one into `build/test-certificates/` — self-signed, offline, trusted
+by nothing, and regenerated if deleted. That is why the suite runs on a fresh clone
+without first obtaining a sandbox certificate, and why nothing certificate-shaped is
+committed. `src/test/resources/application.properties` points the tests at it; the real
+sandbox certificate is still what `bootRun` uses.
+
+Every run happens on GitHub Actions — Java 21, `./gradlew test`, with failures annotated
+onto the diff. See `.github/workflows/build.yml`.
+
 384 tests. The interesting ones are the failure paths rather than the happy ones:
 over-capture and over-refund, idempotent replay and key-reuse conflict, saga compensation
 including a compensation that itself fails, a dispute defeated by liability shift and the

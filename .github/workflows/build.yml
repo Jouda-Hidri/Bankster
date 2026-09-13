@@ -1,0 +1,59 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# A second push to a branch makes the first run's result irrelevant, so cancel it
+# rather than paying for both and waiting on the stale one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Caches the Gradle distribution and dependency cache, and writes the
+      # dependency-report annotation on pull requests.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # No step is needed for the PSD2 certificate: Psd2Config refuses to start without a
+      # keystore and PaymentsWiringTest boots the whole context, so the build generates a
+      # throwaway self-signed one itself via the generateTestKeystore task. Nothing here
+      # contacts the LHV sandbox.
+      - name: Test
+        run: ./gradlew test --no-daemon
+
+      - name: Upload test results
+        # Wanted precisely when the run failed, which is when the default would skip it.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/reports/tests/test
+            build/test-results/test
+          retention-days: 14
+
+      # Turns failures into annotations on the diff, so a reviewer sees which test broke
+      # without downloading the artifact above.
+      - name: Publish test report
+        if: ${{ !cancelled() }}
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: build/test-results/test/TEST-*.xml
+          require_tests: true
+          detailed_summary: true

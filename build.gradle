@@ -47,6 +47,51 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+/*
+ * A throwaway TPP certificate for the tests.
+ *
+ * Psd2Config refuses to start without a keystore, and PaymentsWiringTest boots the whole
+ * application context — so without this the suite fails on a fresh clone and in CI, even
+ * though the payments modules have nothing to do with PSD2. Generating it here rather
+ * than committing one keeps anything certificate-shaped out of the repository, and means
+ * `./gradlew test` simply works with no setup step to forget.
+ *
+ * It is self-signed, offline, password 'changeit', and trusted by nothing. The subject
+ * carries an organizationIdentifier (OID 2.5.4.97) because that is what the TPP id is
+ * read out of. The real sandbox certificate from scripts/generate-sandbox-cert.sh is
+ * unaffected and still used at runtime.
+ */
+def testKeystore = layout.buildDirectory.file('test-certificates/psd2-test-keystore.p12')
+
+tasks.register('generateTestKeystore') {
+    description = 'Generates a self-signed TPP keystore so the test suite can boot the context.'
+    outputs.file(testKeystore)
+    outputs.upToDateWhen { testKeystore.get().asFile.exists() }
+
+    doLast {
+        def target = testKeystore.get().asFile
+        target.parentFile.mkdirs()
+        if (target.exists()) {
+            return
+        }
+        def keytool = "${System.getProperty('java.home')}/bin/keytool"
+        providers.exec {
+            commandLine keytool,
+                    '-genkeypair', '-alias', 'tpp',
+                    '-keyalg', 'RSA', '-keysize', '2048', '-validity', '3650',
+                    '-storetype', 'PKCS12',
+                    '-keystore', target.absolutePath,
+                    '-storepass', 'changeit', '-keypass', 'changeit',
+                    '-dname', 'OID.2.5.4.97=PSDEE-TEST-000000, CN=Bankster Test TPP, O=Bankster, C=EE'
+        }.result.get()
+        logger.lifecycle("Generated a test TPP keystore at ${target}")
+    }
+}
+
+tasks.named('test') {
+    dependsOn 'generateTestKeystore'
+}
+
 // ND4J/JavaCPP reflect into JDK internals; JDK 17+ requires these to be opened explicitly.
 def nd4jJvmArgs = [
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
